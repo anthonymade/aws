@@ -8,6 +8,7 @@ GO_XCOMPILE_CMD_NAME = $(firstword $(subst _, ,$*))
 CHECKSUMS := checksums_sha256.txt
 COVERAGE := coverage.out
 DOCKER_IMAGE_NAME := aws_tools_image
+SIGN_KEY ?=  $(shell git config user.signingkey)
 
 all: target/$(CHECKSUMS)
 
@@ -42,7 +43,8 @@ target:
 target/%: cover vet target
 	$(GO_XCOMPILE_VARS) go build ./...
 	cd cmd/$(GO_XCOMPILE_CMD_NAME) && $(GO_XCOMPILE_VARS) go build -ldflags "-s -w" -o ../../$@ .
-	xz -k $@
+	if test -n "$(SIGN_KEY)"; then gpg --detach-sign --armor -u $(SIGN_KEY) $@; fi
+	xz -f -k $@
 
 xcompile: \
 	target/awsi_linux_amd64 \
